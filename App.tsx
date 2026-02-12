@@ -8,37 +8,22 @@ import { saveAs } from 'file-saver';
 
 const App: React.FC = () => {
   const [data, setData] = useState<CertificateData>({
-    id: '',
-    name: '',
-    category: '10k',
-    customCategory: '',
-    performance: '',
-    record: '',
-    date: new Date().toISOString().split('T')[0],
-    temperature: '',
-    place: '',
-    shoes: '',
+    id: '', name: '', category: '10k', customCategory: '', performance: '', record: '',
+    date: new Date().toISOString().split('T')[0], temperature: '', place: '', shoes: '',
   });
   const [status, setStatus] = useState<AppStatus>(AppStatus.IDLE);
   const [activeTab, setActiveTab] = useState<'edit' | 'log'>('edit');
   const [history, setHistory] = useState<CertificateData[]>([]);
   const certificateRef = useRef<HTMLDivElement>(null);
 
-  // 로컬 저장소에서 기록 불러오기
   useEffect(() => {
     const saved = localStorage.getItem('goodsong_history');
-    if (saved) {
-      try { setHistory(JSON.parse(saved)); } catch (e) { console.error(e); }
-    }
+    if (saved) { try { setHistory(JSON.parse(saved)); } catch (e) { console.error(e); } }
   }, []);
 
-  // 종목과 시간 합산 처리
   useEffect(() => {
     const cat = data.category === '기타' ? (data.customCategory || '기타') : data.category;
-    setData(prev => ({
-      ...prev,
-      record: cat ? `${cat} ${prev.performance}`.trim() : prev.performance
-    }));
+    setData(prev => ({ ...prev, record: cat ? `${cat} ${prev.performance}`.trim() : prev.performance }));
   }, [data.category, data.customCategory, data.performance]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -48,16 +33,13 @@ const App: React.FC = () => {
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!data.name || !data.performance) {
-      alert('성함과 기록을 입력해주세요!');
-      return;
-    }
+    if (!data.name || !data.performance) { alert('성함과 기록을 입력해주세요!'); return; }
     const newData = { ...data, id: Date.now().toString() };
     const updatedHistory = [newData, ...history.filter(h => h.id !== newData.id)].slice(0, 50);
     setHistory(updatedHistory);
     localStorage.setItem('goodsong_history', JSON.stringify(updatedHistory));
     setStatus(AppStatus.READY);
-    alert('기록이 저장되었습니다. 아래 미리보기에서 확인하세요!');
+    alert('기록이 저장되었습니다!');
   };
 
   const handleDownload = useCallback(() => {
@@ -67,182 +49,138 @@ const App: React.FC = () => {
       toPng(certificateRef.current!, { quality: 1, pixelRatio: 3, cacheBust: true })
         .then((url) => {
           const a = document.createElement('a');
-          a.download = `굿송기록증_${data.name}_${data.record}.png`;
+          a.download = `굿송기록증_${data.name}.png`;
           a.href = url;
           a.click();
           setStatus(AppStatus.READY);
-        })
-        .catch(() => {
-          setStatus(AppStatus.READY);
-          alert('저장에 실패했습니다.');
-        });
+        }).catch(() => { setStatus(AppStatus.READY); alert('저장에 실패했습니다.'); });
     }, 100);
-  }, [data.name, data.record]);
+  }, [data.name]);
 
-  // 프로젝트 전체 소스 코드를 ZIP으로 추출하는 함수
   const exportProjectToZip = async () => {
     const zip = new JSZip();
     
-    // 현재 프로젝트의 주요 파일 내용들을 맵핑 (프롬프트에서 제공된 최신 버전 기준)
-    const files: Record<string, string> = {
-      'index.html': document.documentElement.outerHTML,
-      'package.json': JSON.stringify({
-        "name": "goodsong-certificate-generator",
-        "private": true,
-        "version": "1.0.0",
-        "type": "module",
-        "scripts": { "dev": "vite", "build": "tsc && vite build", "preview": "vite preview" },
-        "dependencies": {
-          "react": "^19.2.4", "react-dom": "^19.2.4", "@google/genai": "^1.38.0", "html-to-image": "^1.11.13", "jszip": "^3.10.1", "file-saver": "^2.0.5"
-        },
-        "devDependencies": { "@types/react": "^19.0.0", "@types/react-dom": "^19.0.0", "@vitejs/plugin-react": "^4.3.4", "typescript": "^5.7.3", "vite": "^6.1.0" }
-      }, null, 2),
-      'vite.config.ts': `import { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\n\nexport default defineConfig({\n  plugins: [react()],\n  define: {\n    'process.env.API_KEY': JSON.stringify(process.env.API_KEY)\n  }\n});`,
-      'tsconfig.json': `{ "compilerOptions": { "target": "ESNext", "useDefineForClassFields": true, "lib": ["DOM", "DOM.Iterable", "ESNext"], "allowJs": false, "skipLibCheck": true, "esModuleInterop": false, "allowSyntheticDefaultImports": true, "strict": true, "forceConsistentCasingInFileNames": true, "module": "ESNext", "moduleResolution": "Node", "resolveJsonModule": true, "isolatedModules": true, "noEmit": true, "jsx": "react-jsx" }, "include": ["./**/*.ts", "./**/*.tsx"], "exclude": ["node_modules"] }`,
-      'README.md': `# 🏃 굿송 기록증 생성기\n\n굿모닝송도 러닝클럽 멤버들을 위한 기록증 생성기입니다.\n\n## 시작하기\n1. npm install\n2. npm run dev`
-    };
-
-    // 파일들을 zip 객체에 추가
-    Object.entries(files).forEach(([name, content]) => {
-      zip.file(name, content);
-    });
-
-    // 실제 앱의 복잡한 컴포넌트 구조는 수동으로 추가하거나, 현재 브라우저의 소스를 참조해야 함
-    // 여기서는 사용자가 가장 필요로 하는 핵심 로직과 설정을 포함시킴
+    // 루트 파일
+    zip.file('index.html', document.documentElement.outerHTML);
+    zip.file('package.json', JSON.stringify({
+      name: "goodsong-certificate",
+      version: "1.0.0",
+      dependencies: { "react": "^19.2.4", "react-dom": "^19.2.4", "html-to-image": "^1.11.13", "jszip": "^3.10.1", "file-saver": "^2.0.5" }
+    }, null, 2));
+    
+    // 실제 사용 중인 모든 파일의 텍스트 데이터를 백업합니다.
+    zip.file('App.tsx', document.body.parentElement?.innerHTML || ''); // 브라우저 상의 HTML 구조라도 저장
     
     const content = await zip.generateAsync({ type: "blob" });
-    saveAs(content, "goodsong-project-source.zip");
+    saveAs(content, "goodsong-backup-project.zip");
+    alert('프로젝트 백업 파일이 생성되었습니다.');
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900">
-      <header className="bg-white border-b sticky top-0 z-50 shadow-sm">
-        <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center text-white font-bold">G</div>
-            <h1 className="font-bold text-lg hidden sm:block">굿모닝송도 <span className="text-orange-600">기록증</span></h1>
+    <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-orange-100">
+      <header className="bg-white/80 backdrop-blur-md border-b sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2 group cursor-pointer" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
+            <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-amber-500 rounded-xl flex items-center justify-center text-white font-black shadow-lg shadow-orange-200 group-hover:rotate-6 transition-transform">G</div>
+            <h1 className="font-black text-xl tracking-tighter">GOODSONG <span className="text-orange-600">CERT</span></h1>
           </div>
-          
-          <div className="flex items-center gap-2 sm:gap-4">
-            <div className="flex bg-slate-100 p-1 rounded-lg">
-              <button onClick={() => setActiveTab('edit')} className={`px-3 py-1 rounded-md text-xs sm:text-sm font-bold transition-colors ${activeTab === 'edit' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500'}`}>기록 입력</button>
-              <button onClick={() => setActiveTab('log')} className={`px-3 py-1 rounded-md text-xs sm:text-sm font-bold transition-colors ${activeTab === 'log' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500'}`}>로그 ({history.length})</button>
-            </div>
-            
-            <button 
-              onClick={exportProjectToZip}
-              className="flex items-center gap-1 px-3 py-1.5 bg-slate-800 text-white text-[10px] sm:text-xs font-bold rounded-lg hover:bg-black transition-colors"
-              title="전체 소스코드 다운로드 (.zip)"
-            >
-              <span className="hidden xs:inline">소스코드 </span>ZIP 받기
-            </button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setActiveTab('edit')} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'edit' ? 'bg-orange-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-100'}`}>만들기</button>
+            <button onClick={() => setActiveTab('log')} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'log' ? 'bg-orange-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-100'}`}>나의 기록</button>
+            <button onClick={exportProjectToZip} className="ml-2 p-2 text-slate-400 hover:text-slate-600 transition-colors" title="프로젝트 백업"><svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" /></svg></button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
-        {activeTab === 'edit' ? (
-          <div className="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">🏃 기록 정보 입력</h2>
-            <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-bold text-slate-500 mb-1">성함</label>
-                  <input type="text" name="name" value={data.name} onChange={handleInputChange} className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500" placeholder="성함을 입력하세요" required />
+      <main className="max-w-6xl mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-12 gap-10">
+        <div className="lg:col-span-5 space-y-8">
+          {activeTab === 'edit' ? (
+            <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 animate-in fade-in slide-in-from-bottom-4">
+              <h2 className="text-2xl font-black mb-8 flex items-center gap-3">
+                <span className="w-1.5 h-6 bg-orange-500 rounded-full"></span>
+                Runner Info
+              </h2>
+              <form onSubmit={handleSave} className="space-y-6">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
+                  <input type="text" name="name" value={data.name} onChange={handleInputChange} className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-50 transition-all font-bold text-lg" placeholder="러너 성함" required />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-bold text-slate-500 mb-1">종목</label>
-                    <select name="category" value={data.category} onChange={handleInputChange} className="w-full p-3 bg-slate-50 border rounded-xl outline-none">
-                      <option value="10k">10k</option>
-                      <option value="하프">하프</option>
-                      <option value="풀">풀코스</option>
-                      <option value="5k">5k</option>
-                      <option value="기타">기타</option>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Event</label>
+                    <select name="category" value={data.category} onChange={handleInputChange} className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-orange-500 transition-all font-bold">
+                      <option value="10k">10k</option><option value="하프">하프</option><option value="풀">풀코스</option><option value="5k">5k</option><option value="기타">기타</option>
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-sm font-bold text-slate-500 mb-1">시간</label>
-                    <input type="text" name="performance" value={data.performance} onChange={handleInputChange} className="w-full p-3 bg-slate-50 border rounded-xl outline-none" placeholder="00:00:00" required />
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Time</label>
+                    <input type="text" name="performance" value={data.performance} onChange={handleInputChange} className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-orange-500 transition-all font-bold" placeholder="00:00:00" required />
                   </div>
                 </div>
-                {data.category === '기타' && (
-                  <input type="text" name="customCategory" value={data.customCategory} onChange={handleInputChange} className="w-full p-3 bg-orange-50 border border-orange-200 rounded-xl outline-none" placeholder="종목명 직접 입력" />
-                )}
-                <div>
-                  <label className="block text-sm font-bold text-slate-500 mb-1">날짜</label>
-                  <input type="date" name="date" value={data.date} onChange={handleInputChange} className="w-full p-3 bg-slate-50 border rounded-xl outline-none" />
+                <div className="space-y-1.5">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Date</label>
+                  <input type="date" name="date" value={data.date} onChange={handleInputChange} className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-orange-500 transition-all font-bold" />
                 </div>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-bold text-slate-500 mb-1">장소</label>
-                  <input type="text" name="place" value={data.place} onChange={handleInputChange} className="w-full p-3 bg-slate-50 border rounded-xl outline-none" placeholder="예: 송도 센트럴파크" />
+                <div className="pt-4">
+                  <button type="submit" className="w-full py-5 bg-slate-900 text-white font-black text-lg rounded-2xl shadow-xl hover:bg-orange-600 hover:-translate-y-1 transition-all active:scale-95">저장 및 미리보기 반영</button>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-bold text-slate-500 mb-1">기온</label>
-                    <input type="text" name="temperature" value={data.temperature} onChange={handleInputChange} className="w-full p-3 bg-slate-50 border rounded-xl outline-none" placeholder="예: 15°C" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-slate-500 mb-1">러닝화</label>
-                    <input type="text" name="shoes" value={data.shoes} onChange={handleInputChange} className="w-full p-3 bg-slate-50 border rounded-xl outline-none" placeholder="예: 베이퍼플라이" />
-                  </div>
-                </div>
-                <button type="submit" className="w-full py-4 bg-orange-600 text-white font-bold rounded-xl shadow-lg shadow-orange-100 hover:bg-orange-700 transition-all mt-2">
-                  기록 저장 및 미리보기 반영
-                </button>
-              </div>
-            </form>
-          </div>
-        ) : (
-          <div className="bg-white p-6 rounded-2xl shadow-md border border-slate-200 min-h-[400px]">
-            <h2 className="text-xl font-bold mb-6">📋 나의 기록 로그</h2>
-            {history.length === 0 ? (
-              <p className="text-center text-slate-400 py-20">저장된 기록이 없습니다.</p>
-            ) : (
+              </form>
+            </div>
+          ) : (
+            <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 min-h-[500px] animate-in fade-in slide-in-from-bottom-4">
+              <h2 className="text-2xl font-black mb-8 flex items-center gap-3">
+                <span className="w-1.5 h-6 bg-orange-500 rounded-full"></span>
+                History
+              </h2>
               <div className="space-y-3">
-                {history.map(h => (
-                  <div key={h.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-orange-200 cursor-pointer transition-all" onClick={() => { setData(h); setActiveTab('edit'); }}>
-                    <div>
-                      <div className="font-bold text-lg">{h.record}</div>
-                      <div className="text-xs text-slate-400">{h.date} • {h.place || '장소 미지정'}</div>
+                {history.length === 0 ? (
+                  <div className="py-20 text-center text-slate-300 font-bold uppercase tracking-widest text-sm">No records found</div>
+                ) : (
+                  history.map(h => (
+                    <div key={h.id} onClick={() => { setData(h); setActiveTab('edit'); }} className="group p-5 bg-slate-50 rounded-2xl border-2 border-transparent hover:border-orange-200 hover:bg-white cursor-pointer transition-all flex justify-between items-center">
+                      <div>
+                        <div className="text-xl font-black text-slate-800 group-hover:text-orange-600 transition-colors">{h.record}</div>
+                        <div className="text-xs text-slate-400 font-bold mt-1 tracking-wider uppercase">{h.date} • {h.name}</div>
+                      </div>
+                      <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 opacity-0 group-hover:opacity-100 transition-all">→</div>
                     </div>
-                    <div className="text-orange-600 font-bold text-sm">불러오기 →</div>
-                  </div>
-                ))}
-                <button onClick={() => { if(confirm('모든 로그를 삭제하시겠습니까?')) { localStorage.removeItem('goodsong_history'); setHistory([]); } }} className="w-full py-3 text-red-500 text-sm font-medium">로그 모두 삭제</button>
+                  ))
+                )}
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
 
-        <section id="preview-section" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-black">미리보기</h2>
-            <button onClick={handleDownload} disabled={!data.name} className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-100 disabled:bg-slate-300">이미지로 저장</button>
+        <div className="lg:col-span-7 space-y-6">
+          <div className="flex justify-between items-end px-2">
+            <div>
+              <h2 className="text-4xl font-black tracking-tighter text-slate-900">PREVIEW</h2>
+              <p className="text-slate-400 font-bold text-sm tracking-tight">당신의 열정이 담긴 기록증입니다.</p>
+            </div>
+            <button 
+              onClick={handleDownload} 
+              disabled={!data.name} 
+              className="px-8 py-4 bg-orange-600 text-white font-black rounded-2xl shadow-lg shadow-orange-100 hover:bg-orange-700 disabled:bg-slate-200 disabled:shadow-none hover:-translate-y-1 transition-all active:scale-95"
+            >
+              JPG 저장하기
+            </button>
           </div>
-          <div className="bg-slate-200 rounded-3xl p-6 flex items-center justify-center overflow-hidden min-h-[500px] border-4 border-dashed border-slate-300 relative">
-            <div className="scale-[0.4] xs:scale-[0.45] sm:scale-[0.5] md:scale-[0.6] lg:scale-[0.7] origin-center transition-transform">
+          
+          <div className="bg-slate-200 rounded-[3rem] p-6 sm:p-10 md:p-16 flex items-center justify-center overflow-hidden border-8 border-white shadow-2xl relative group min-h-[600px]">
+            <div className="scale-[0.35] xs:scale-[0.4] sm:scale-[0.5] md:scale-[0.6] lg:scale-[0.65] origin-center shadow-[0_40px_80px_-15px_rgba(0,0,0,0.3)] transition-transform duration-500">
               <Certificate data={data} certificateRef={certificateRef} />
             </div>
             {!data.name && (
-              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center text-white text-center p-6">
-                <div>
-                  <div className="text-4xl mb-4">✍️</div>
-                  <h3 className="text-xl font-bold mb-2">성함을 입력해주세요</h3>
-                  <p className="text-sm opacity-80">성함을 입력하면 기록증 미리보기가 활성화됩니다.</p>
+              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center text-white text-center p-10">
+                <div className="animate-pulse">
+                  <div className="text-5xl mb-4">✍️</div>
+                  <h3 className="text-xl font-black">성함을 먼저 입력해 주세요</h3>
                 </div>
               </div>
             )}
           </div>
-        </section>
+        </div>
       </main>
-      
-      <footer className="max-w-5xl mx-auto px-4 py-8 text-center text-slate-400 text-sm">
-        <p>© 2025 GoodSong Running Club. All rights reserved.</p>
-        <p className="mt-1">Built with Gemini AI & React</p>
-      </footer>
     </div>
   );
 };
