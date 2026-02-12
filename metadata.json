@@ -1,0 +1,5 @@
+{
+  "name": "굿송 기록증 생성기 (GoodSong Certificate Generator)",
+  "description": "이름, 기록, 날짜를 입력하여 굿송 로고가 포함된 고품질 기록증을 생성하고 이미지로 다운로드할 수 있는 웹 애플리케이션입니다. Gemini AI를 활용하여 개인화된 축하 메시지를 생성합니다.",
+  "requestFramePermissions": []
+}
