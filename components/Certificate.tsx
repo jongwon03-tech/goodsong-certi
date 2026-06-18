@@ -9,7 +9,7 @@ interface CertificateProps {
 }
 
 export const Certificate: React.FC<CertificateProps> = ({ data, certificateRef }) => {
-  const { name, record, date, temperature, place, shoes } = data;
+  const { name, record, date, temperature, weather, place, shoes } = data;
 
   return (
     <div className="flex justify-center p-4">
@@ -47,27 +47,35 @@ export const Certificate: React.FC<CertificateProps> = ({ data, certificateRef }
             </div>
           </div>
 
-          {/* Details Section: Place, Temperature, Shoes */}
-          <div className="grid grid-cols-3 gap-8 w-full max-w-xl text-center">
-            {place && (
-              <div className="flex flex-col gap-1">
-                <span className="text-[10px] text-slate-400 uppercase tracking-widest">Place</span>
-                <span className="text-lg font-bold text-slate-700">{place}</span>
+          {/* Details Section: Place, Temperature, Weather, Shoes with Elegant Dividers */}
+          {(() => {
+            const formattedTemp = temperature 
+              ? (/[°C℃]/.test(temperature) ? temperature : `${temperature}°C`) 
+              : '';
+
+            const items = [
+              { label: 'Place', value: place },
+              { label: 'Temp', value: formattedTemp },
+              { label: 'Weather', value: weather },
+              { label: 'Shoes', value: shoes }
+            ].filter(item => !!item.value);
+
+            if (items.length === 0) return null;
+
+            return (
+              <div className="flex items-center justify-center w-full max-w-2xl px-6 py-4 bg-slate-50/50 rounded-2xl border border-slate-100 text-center">
+                {items.map((item, idx) => (
+                  <React.Fragment key={item.label}>
+                    {idx > 0 && <div className="h-8 w-[1px] bg-slate-200 mx-6 shrink-0" />}
+                    <div className="flex flex-col gap-1 flex-1 min-w-[60px]">
+                      <span className="text-[11px] text-slate-400 uppercase tracking-widest font-semibold">{item.label}</span>
+                      <span className="text-lg font-bold text-slate-700 leading-tight">{item.value}</span>
+                    </div>
+                  </React.Fragment>
+                ))}
               </div>
-            )}
-            {temperature && (
-              <div className="flex flex-col gap-1">
-                <span className="text-[10px] text-slate-400 uppercase tracking-widest">Temp</span>
-                <span className="text-lg font-bold text-slate-700">{temperature}</span>
-              </div>
-            )}
-            {shoes && (
-              <div className="flex flex-col gap-1">
-                <span className="text-[10px] text-slate-400 uppercase tracking-widest">Shoes</span>
-                <span className="text-lg font-bold text-slate-700">{shoes}</span>
-              </div>
-            )}
-          </div>
+            );
+          })()}
 
           <div className="text-center max-w-lg px-8">
             <div className="text-2xl text-indigo-600 font-bold font-serif-kr leading-[1.6] tracking-tight">
