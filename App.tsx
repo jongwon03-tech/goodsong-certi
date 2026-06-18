@@ -9,7 +9,7 @@ import { saveAs } from 'file-saver';
 const App: React.FC = () => {
   const [data, setData] = useState<CertificateData>({
     id: '', name: '', category: '10k', customCategory: '', performance: '', record: '',
-    date: new Date().toISOString().split('T')[0], temperature: '', place: '', shoes: '',
+    date: new Date().toISOString().split('T')[0], temperature: '', weather: '', place: '', shoes: '',
   });
   const [status, setStatus] = useState<AppStatus>(AppStatus.IDLE);
   const [activeTab, setActiveTab] = useState<'edit' | 'log'>('edit');
@@ -115,6 +115,91 @@ const App: React.FC = () => {
                   <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Date</label>
                   <input type="date" name="date" value={data.date} onChange={handleInputChange} className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-orange-500 transition-all font-bold" />
                 </div>
+
+                {/* Additional Details Section */}
+                <div className="pt-4 border-t border-slate-100 space-y-4">
+                  <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                    <span>🏃</span> 추가 기록 정보 <span className="text-xs font-medium text-slate-400">(선택)</span>
+                  </h3>
+                  
+                  {/* Weather Selection */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Weather (날씨)</label>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { emoji: '☀️', text: '맑음' },
+                        { emoji: '☁️', text: '흐림' },
+                        { emoji: '🌧️', text: '비' },
+                        { emoji: '💨', text: '바람' },
+                        { emoji: '❄️', text: '눈' },
+                        { emoji: '🌫️', text: '안개' }
+                      ].map(opt => {
+                        const weatherVal = `${opt.emoji} ${opt.text}`;
+                        const isSelected = data.weather === weatherVal;
+                        return (
+                          <button
+                            type="button"
+                            key={opt.text}
+                            onClick={() => {
+                              setData(prev => ({
+                                ...prev,
+                                weather: isSelected ? '' : weatherVal
+                              }));
+                            }}
+                            className={`px-3 py-2 rounded-xl text-sm font-bold flex items-center gap-1.5 border-2 transition-all ${
+                              isSelected
+                                ? 'bg-orange-50 border-orange-500 text-orange-600 shadow-sm'
+                                : 'bg-slate-50 border-transparent text-slate-600 hover:bg-slate-100'
+                            }`}
+                          >
+                            <span>{opt.emoji}</span>
+                            <span>{opt.text}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Temperature & Place Fields */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Temp (기온)</label>
+                      <input
+                        type="text"
+                        name="temperature"
+                        value={data.temperature || ''}
+                        onChange={handleInputChange}
+                        placeholder="예: 25"
+                        className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-orange-500 transition-all font-bold"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Place (장소)</label>
+                      <input
+                        type="text"
+                        name="place"
+                        value={data.place || ''}
+                        onChange={handleInputChange}
+                        placeholder="예: 송도센트럴파크"
+                        className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-orange-500 transition-all font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Shoes Field */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Shoes (러닝화)</label>
+                    <input
+                      type="text"
+                      name="shoes"
+                      value={data.shoes || ''}
+                      onChange={handleInputChange}
+                      placeholder="예: 나이키 알파플라이 3"
+                      className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-orange-500 transition-all font-bold"
+                    />
+                  </div>
+                </div>
+
                 <button type="submit" className="w-full py-5 bg-slate-900 text-white font-black text-lg rounded-2xl shadow-xl hover:bg-orange-600 hover:-translate-y-1 transition-all active:scale-95">기록 저장</button>
               </form>
             </div>
